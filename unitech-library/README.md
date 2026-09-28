@@ -68,15 +68,13 @@ npm install
 npm run dev                # starts on http://localhost:5173
 ```
 
-Visit `http://localhost:5173` for the public site, or `http://localhost:5173/admin/login`
-for the admin panel (login: `admin` / `Admin@123` — change immediately).
+Visit `http://localhost:5173` for the public site.
 
 ## Suggested Next Steps (polish / go-live)
-1. Change the seeded admin password immediately after first login (or add a "change password" screen)
-2. Add PDF receipt generation on top of the existing `receiptNumber` field (the `pdfkit` package is already
+1. Add PDF receipt generation on top of the existing `receiptNumber` field (the `pdfkit` package is already
    in `package.json` for this)
-3. Add pagination to the Students/Admissions tables once data volume grows
-4. Deploy: backend to Render/Railway, frontend to Vercel/Netlify, database on MongoDB Atlas,
+2. Add pagination to the Students/Admissions tables once data volume grows
+3. Deploy: backend to Render/Railway, frontend to Vercel/Netlify, database on MongoDB Atlas,
    student photos on Cloudinary (already wired up)
-5. Optional future features from the original spec: SMS/WhatsApp fee-due reminders, seat QR codes,
+4. Optional future features from the original spec: SMS/WhatsApp fee-due reminders, seat QR codes,
    Excel/PDF report exports beyond the CSV export already included in Reports
