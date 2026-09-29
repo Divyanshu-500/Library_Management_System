@@ -80,8 +80,20 @@ const changePassword = asyncHandler(async (req, res) => {
 // @desc  Logout admin
 // @route POST /api/auth/logout
 const logoutAdmin = asyncHandler(async (req, res) => {
-  res.cookie(process.env.COOKIE_NAME || "udl_token", "", { httpOnly: true, expires: new Date(0) });
-  res.json({ success: true, message: "Logged out" });
+  const isProduction = process.env.NODE_ENV === "production";
+
+  res.cookie(process.env.COOKIE_NAME || "udl_token", "", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
+    expires: new Date(0),
+  });
+
+  res.json({
+    success: true,
+    message: "Logged out",
+  });
 });
 
 // @desc  Get current logged in admin
