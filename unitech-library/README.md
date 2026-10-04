@@ -4,6 +4,11 @@ A full MERN-stack platform to manage multiple library branches, classes, seats,
 student admissions, and fee history — with a public seat-availability site and
 a full-featured admin console.
 
+## 🚀 Live Demo
+
+[Visit Unitech Digital Library](https://unitech-digital-library-jncr.onrender.com/)
+
+
 ## Stack
 - **Frontend:** React 18 (Vite) + Tailwind CSS + Recharts + Lucide icons
 - **Backend:** Node.js + Express
