@@ -1,12 +1,13 @@
+## 🚀 Live Demo
+
+[Visit Unitech Digital Library](https://unitech-digital-library-jncr.onrender.com/)
+
+
 # Unitech Digital Library Management & Seat Allocation System (UDLMS)
 
 A full MERN-stack platform to manage multiple library branches, classes, seats,
 student admissions, and fee history — with a public seat-availability site and
 a full-featured admin console.
-
-## 🚀 Live Demo
-
-[Visit Unitech Digital Library](https://unitech-digital-library-jncr.onrender.com/)
 
 
 ## Stack
