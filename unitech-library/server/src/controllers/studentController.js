@@ -1,19 +1,56 @@
+
 const asyncHandler = require("express-async-handler");
 const Student = require("../models/Student");
 const Admission = require("../models/Admission");
 const logAction = require("../utils/logAction");
 
+// Generate a unique student code
 const genStudentCode = async () => {
-  const count = await Student.countDocuments();
-  return `STU${String(count + 1).padStart(5, "0")}`;
+  // Find the highest existing student code
+  const lastStudent = await Student.findOne({
+    studentCode: { $regex: /^STU\d+$/ },
+  })
+    .collation({ locale: "en", numericOrdering: true })
+    .sort({ studentCode: -1 })
+    .select("studentCode")
+    .lean();
+
+  let nextNumber = 1;
+
+  if (lastStudent?.studentCode) {
+    const lastNumber = parseInt(
+      lastStudent.studentCode.replace(/^STU/, ""),
+      10
+    );
+
+    if (Number.isFinite(lastNumber)) {
+      nextNumber = lastNumber + 1;
+    }
+  }
+
+  // Ensure that the generated code is not already in use
+  let studentCode;
+
+  do {
+    studentCode = `STU${String(nextNumber).padStart(5, "0")}`;
+    nextNumber++;
+  } while (await Student.exists({ studentCode }));
+
+  return studentCode;
 };
 
-// @desc Create student   POST /api/students
+// @desc    Create student
+// @route   POST /api/students
+// @access  Private
 const createStudent = asyncHandler(async (req, res) => {
   const studentCode = await genStudentCode();
   const photoUrl = req.file?.path || req.body.photoUrl || "";
 
-  const student = await Student.create({ ...req.body, studentCode, photoUrl });
+  const student = await Student.create({
+    ...req.body,
+    studentCode,
+    photoUrl,
+  });
 
   await logAction({
     admin: req.admin,
@@ -23,12 +60,18 @@ const createStudent = asyncHandler(async (req, res) => {
     description: `Created student profile for ${student.fullName}`,
   });
 
-  res.status(201).json({ success: true, data: student });
+  res.status(201).json({
+    success: true,
+    data: student,
+  });
 });
 
-// @desc Get all students (search by name/mobile/code)   GET /api/students?search=
+// @desc    Get all students (search by name/mobile/code)
+// @route   GET /api/students?search=
+// @access  Private
 const getStudents = asyncHandler(async (req, res) => {
   const { search } = req.query;
+
   const filter = search
     ? {
         $or: [
@@ -40,34 +83,64 @@ const getStudents = asyncHandler(async (req, res) => {
     : {};
 
   const students = await Student.find(filter).sort("-createdAt");
-  res.json({ success: true, count: students.length, data: students });
+
+  res.json({
+    success: true,
+    count: students.length,
+    data: students,
+  });
 });
 
-// @desc Get single student with admission + fee summary   GET /api/students/:id
+// @desc    Get single student with admissions
+// @route   GET /api/students/:id
+// @access  Private
 const getStudent = asyncHandler(async (req, res) => {
   const student = await Student.findById(req.params.id);
+
   if (!student) {
     res.status(404);
     throw new Error("Student not found");
   }
-  const admissions = await Admission.find({ student: student._id })
+
+  const admissions = await Admission.find({
+    student: student._id,
+  })
     .populate("library", "name")
     .populate("classRoom", "name")
     .populate("seat", "seatNumber")
     .sort("-admissionDate");
 
-  res.json({ success: true, data: { student, admissions } });
+  res.json({
+    success: true,
+    data: {
+      student,
+      admissions,
+    },
+  });
 });
 
-// @desc Update student   PUT /api/students/:id
+// @desc    Update student
+// @route   PUT /api/students/:id
+// @access  Private
 const updateStudent = asyncHandler(async (req, res) => {
   const updates = { ...req.body };
-  if (req.file?.path) updates.photoUrl = req.file.path;
 
-  const student = await Student.findByIdAndUpdate(req.params.id, updates, {
-    new: true,
-    runValidators: true,
-  });
+  // Do not allow clients to change the generated student code
+  delete updates.studentCode;
+
+  if (req.file?.path) {
+    updates.photoUrl = req.file.path;
+  }
+
+  const student = await Student.findByIdAndUpdate(
+    req.params.id,
+    updates,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
   if (!student) {
     res.status(404);
     throw new Error("Student not found");
@@ -81,17 +154,30 @@ const updateStudent = asyncHandler(async (req, res) => {
     description: `Updated profile of ${student.fullName}`,
   });
 
-  res.json({ success: true, data: student });
+  res.json({
+    success: true,
+    data: student,
+  });
 });
 
-// @desc Delete student (blocked if has active admission)   DELETE /api/students/:id
+// @desc    Delete student (blocked if active admission exists)
+// @route   DELETE /api/students/:id
+// @access  Private
 const deleteStudent = asyncHandler(async (req, res) => {
-  const activeAdmission = await Admission.findOne({ student: req.params.id, status: "active" });
+  const activeAdmission = await Admission.findOne({
+    student: req.params.id,
+    status: "active",
+  });
+
   if (activeAdmission) {
     res.status(400);
-    throw new Error("Cannot delete a student with an active admission. Close admission first.");
+    throw new Error(
+      "Cannot delete a student with an active admission. Close admission first."
+    );
   }
+
   const student = await Student.findByIdAndDelete(req.params.id);
+
   if (!student) {
     res.status(404);
     throw new Error("Student not found");
@@ -105,7 +191,16 @@ const deleteStudent = asyncHandler(async (req, res) => {
     description: `Deleted student ${student.fullName}`,
   });
 
-  res.json({ success: true, message: "Student deleted" });
+  res.json({
+    success: true,
+    message: "Student deleted",
+  });
 });
 
-module.exports = { createStudent, getStudents, getStudent, updateStudent, deleteStudent };
+module.exports = {
+  createStudent,
+  getStudents,
+  getStudent,
+  updateStudent,
+  deleteStudent,
+};
